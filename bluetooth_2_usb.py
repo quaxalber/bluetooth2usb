@@ -10,6 +10,7 @@ import usb_hid
 from src.bluetooth_2_usb.args import parse_args
 from src.bluetooth_2_usb.logging import add_file_handler, get_logger
 from src.bluetooth_2_usb.relay import RelayController, async_list_input_devices
+from src.bluetooth_2_usb.relay_ble import RelayBleController
 
 
 logger = get_logger()
@@ -49,9 +50,19 @@ async def main() -> NoReturn:
     logger.debug(log_handlers_message)
     logger.info(f"Launching {VERSIONED_NAME}")
 
-    controller = RelayController(args.device_ids, args.auto_discover, args.grab_devices)
-    await controller.async_relay_devices()
+    tasks = []
+    if args.no_input_relay & args.no_ble_relay:
+        raise RuntimeError("Both input and BLE realys are disabled.")
 
+    if not args.no_input_relay:
+        input_controller = RelayController(args.device_ids, args.auto_discover, args.grab_devices)
+        tasks.append(input_controller.async_relay_devices())
+
+    if not args.no_ble_relay:
+        ble_controller = RelayBleController(args.accept_non_trusted, args.partial_parse_ble_command)
+        tasks.append(ble_controller.async_relay_ble())
+
+    await asyncio.gather(*tasks)
 
 async def async_list_devices():
     for dev in await async_list_input_devices():

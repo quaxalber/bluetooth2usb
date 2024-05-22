@@ -11,7 +11,7 @@ class CustomArgumentParser(argparse.ArgumentParser):
         super().__init__(
             *args,
             add_help=False,
-            description="Bluetooth to USB HID relay. Handles Bluetooth keyboard and mouse events from multiple input devices and translates them to USB using Linux's gadget mode.",
+            description="Bluetooth to USB HID relay. Handles Bluetooth keyboard and mouse events from multiple input devices and translates them to USB using Linux's gadget mode. Handles keycodes sent to BLE GATT characteristic and translates them to USB using Linux's gadget mode.",
             formatter_class=argparse.RawTextHelpFormatter,
             **kwargs,
         )
@@ -46,6 +46,30 @@ class CustomArgumentParser(argparse.ArgumentParser):
             action="store_true",
             default=False,
             help="List all available input devices and exit.",
+        )
+        self.add_argument(
+            "--no-input-relay",
+            action="store_true",
+            default=False,
+            help="Disable input relay mode (sends input keys to USB HID device)\nDefault: input relay enabled.",
+        )
+        self.add_argument(
+            "--no-ble-relay",
+            action="store_true",
+            default=False,
+            help="Disable BLE relay mode (BLE server that sends keystrokes to USB HID device)\nDefault: BLE relay enabled.",
+        )
+        self.add_argument(
+            "--accept-non-trusted",
+            action="store_true",
+            default=False,
+            help="UNSAFE! Accepts non-trusted BLE relay clients.",
+        )
+        self.add_argument(
+            "--partial-parse-ble-command",
+            action="store_true",
+            default=False,
+            help="Enables partial parsing of GATT characteristic input (ignores unknown key names).",
         )
         self.add_argument(
             "--log_to_file",
@@ -104,6 +128,10 @@ class Arguments:
         "_auto_discover",
         "_grab_devices",
         "_list_devices",
+        "_no_input_relay",
+        "_no_ble_relay",
+        "_accept_non_trusted",
+        "_partial_parse_ble_command",
         "_log_to_file",
         "_log_path",
         "_debug",
@@ -116,6 +144,10 @@ class Arguments:
         auto_discover: bool,
         grab_devices: bool,
         list_devices: bool,
+        no_input_relay: bool,
+        no_ble_relay: bool,
+        accept_non_trusted: bool,
+        partial_parse_ble_command: bool,
         log_to_file: bool,
         log_path: str,
         debug: bool,
@@ -125,6 +157,10 @@ class Arguments:
         self._auto_discover = auto_discover
         self._grab_devices = grab_devices
         self._list_devices = list_devices
+        self._no_input_relay = no_input_relay
+        self._no_ble_relay = no_ble_relay
+        self._accept_non_trusted = accept_non_trusted
+        self._partial_parse_ble_command = partial_parse_ble_command
         self._log_to_file = log_to_file
         self._log_path = log_path
         self._debug = debug
@@ -145,6 +181,22 @@ class Arguments:
     @property
     def list_devices(self) -> bool:
         return self._list_devices
+
+    @property
+    def no_input_relay(self) -> bool:
+        return self._no_input_relay
+
+    @property
+    def no_ble_relay(self) -> bool:
+        return self._no_ble_relay
+
+    @property
+    def accept_non_trusted(self) -> bool:
+        return self._accept_non_trusted
+
+    @property
+    def partial_parse_ble_command(self) -> bool:
+        return self._partial_parse_ble_command
 
     @property
     def log_to_file(self) -> bool:
@@ -182,6 +234,10 @@ def parse_args() -> Arguments:
         auto_discover=args.auto_discover,
         grab_devices=args.grab_devices,
         list_devices=args.list_devices,
+        no_input_relay=args.no_input_relay,
+        no_ble_relay=args.no_ble_relay,
+        accept_non_trusted=args.accept_non_trusted,
+        partial_parse_ble_command=args.partial_parse_ble_command,
         log_to_file=args.log_to_file,
         log_path=args.log_path,
         debug=args.debug,

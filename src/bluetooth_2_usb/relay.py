@@ -45,7 +45,7 @@ def init_usb_gadgets() -> None:
     _logger.debug("Initializing USB gadgets...")
     usb_hid.enable(
         [
-            Device.MOUSE,
+            Device.BOOT_MOUSE,
             Device.KEYBOARD,
             Device.CONSUMER_CONTROL,
         ]  # type: ignore
@@ -136,14 +136,11 @@ class DeviceRelay:
     async def _async_relay_event(self, input_event: InputEvent) -> None:
         event = categorize(input_event)
         _logger.debug(f"Received {event} from {self.input_device.name}")
-        func = None
+
         if isinstance(event, RelEvent):
-            func = _move_mouse
+            _move_mouse(event)
         elif isinstance(event, KeyEvent):
-            func = _send_key
-        if func:
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, func, event)
+            _send_key(event)
 
 
 def _move_mouse(event: RelEvent) -> None:
@@ -226,7 +223,7 @@ class RelayController:
             for device in await async_list_input_devices():
                 if self._should_relay(device):
                     yield device
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.25)
 
     def _should_relay(self, device: InputDevice) -> bool:
         return not self._has_task(device) and self._matches_criteria(device)
